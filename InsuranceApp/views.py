@@ -27,12 +27,13 @@ def create_record(request):
             claim = claim_form.save(commit=False)
             claim.policy = policy
             claim.save()
-            if request.is_ajax():
+            # Проверяем AJAX-запрос по заголовку
+            if 'HTTP_X_REQUESTED_WITH' in request.META and request.META['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest':
                 return JsonResponse({'success': True, 'message': 'Record created successfully'})
             return redirect('index')
         else:
             errors = {**client_form.errors, **policy_form.errors, **claim_form.errors}
-            if request.is_ajax():
+            if 'HTTP_X_REQUESTED_WITH' in request.META and request.META['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest':
                 return JsonResponse({'success': False, 'errors': errors}, status=400)
     else:
         client_form = ClientForm()
@@ -52,11 +53,11 @@ def delete_client(request):
         if form.is_valid():
             client_id = form.cleaned_data['client_id']
             Client.objects.filter(id=client_id).delete()
-            if request.is_ajax():
+            if 'HTTP_X_REQUESTED_WITH' in request.META and request.META['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest':
                 return JsonResponse({'success': True, 'message': f'Client {client_id} deleted'})
             return redirect('index')
         else:
-            if request.is_ajax():
+            if 'HTTP_X_REQUESTED_WITH' in request.META and request.META['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest':
                 return JsonResponse({'success': False, 'errors': form.errors}, status=400)
     else:
         form = DeleteClientForm()
@@ -102,6 +103,16 @@ def view_records(request):
         columns = ['Policy Type', 'Claim Count', 'Total Amount']
         title = 'Claims Grouped by Policy Type'
 
+    # Преобразуем ключи в словаре для соответствия именам столбцов
+    formatted_results = []
+    for row in results:
+        formatted_row = {}
+        for col in columns:
+            key = col.lower().replace(' ', '_')
+            if key in row:
+                formatted_row[col] = row[key]
+        formatted_results.append(formatted_row)
+
     if request.GET.get('export') == 'json':
         data = list(results)
         response = HttpResponse(
@@ -112,7 +123,7 @@ def view_records(request):
         return response
 
     return render(request, 'view.html', {
-        'results': results,
+        'results': formatted_results,
         'columns': columns,
         'title': title
     })

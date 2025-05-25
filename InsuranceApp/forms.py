@@ -2,6 +2,7 @@ from django import forms
 from .models import Client, Policy, Claim
 from django.core.exceptions import ValidationError
 import re
+from datetime import date
 
 class ClientForm(forms.ModelForm):
     class Meta:
