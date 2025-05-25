@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}Main Menu{% endblock %}
+{% block content %}
+    <div class="card p-4">
+        <h1 class="text-center mb-4">Insurance Company - Main Menu</h1>
+        <div class="d-flex justify-content-center mb-4">
+            <a href="{% url 'create' %}" class="btn btn-primary mx-2">Create New Record</a>
+            <a href="{% url 'view' %}" class="btn btn-primary mx-2">View Records</a>
+            <a href="{% url 'delete' %}" class="btn btn-primary mx-2">Delete Record</a>
+        </div>
+        <h2>Available Policy Types</h2>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Policy Type</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for policy in policy_types %}
+                <tr>
+                    <td>{{ policy.policy_type }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td>No policy types available.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

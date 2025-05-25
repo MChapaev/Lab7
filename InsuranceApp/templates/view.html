@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% block title %}View Records{% endblock %}
+{% block content %}
+    <div class="card p-4">
+        <h1 class="text-center mb-4">View Records</h1>
+        
+        <h3>Claims by Client</h3>
+        <form id="byClientForm" method="get" class="mb-4">
+            <input type="hidden" name="query_type" value="by_client">
+            <div class="mb-3">
+                <label for="full_name" class="form-label">Full Name:</label>
+                <input type="text" name="full_name" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label for="passport_number" class="form-label">Passport Number:</label>
+                <input type="text" name="passport_number" class="form-control" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Search</button>
+            <button type="button" class="btn btn-secondary" onclick="exportJson('by_client')">Export as JSON</button>
+        </form>
+
+        <h3>All Active Claims</h3>
+        <form id="activeForm" method="get" class="mb-4">
+            <input type="hidden" name="query_type" value="active">
+            <button type="submit" class="btn btn-primary">View Active Claims</button>
+            <button type="button" class="btn btn-secondary" onclick="exportJson('active')">Export as JSON</button>
+        </form>
+
+        <h3>Claims Grouped by Policy Type</h3>
+        <form id="groupForm" method="get" class="mb-4">
+            <input type="hidden" name="query_type" value="group_by_type">
+            <button type="submit" class="btn btn-primary">Group by Policy Type</button>
+            <button type="button" class="btn btn-secondary" onclick="exportJson('group_by_type')">Export as JSON</button>
+        </form>
+
+        {% if results %}
+        <h2>{{ title }}</h2>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    {% for column in columns %}
+                    <th>{{ column }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in results %}
+                <tr>
+                    {% for column in columns %}
+                    <td>{{ row|attr:column|lower }}</td>
+                    {% endfor %}
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="{{ columns|length }}">No records found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </div>
+    <script>
+        function exportJson(queryType) {
+            let url = '{% url 'view' %}?query_type=' + queryType + '&export=json';
+            if (queryType === 'by_client') {
+                const form = $('#byClientForm').serialize();
+                url = '{% url 'view' %}?' + form + '&export=json';
+            }
+            window.location.href = url;
+        }
+    </script>
+{% endblock %}
