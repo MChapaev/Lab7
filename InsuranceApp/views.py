@@ -172,6 +172,16 @@ def view_records(request):
             print('Returning JSON for group_by_type:', response_data)
             return JsonResponse(response_data)
 
+    # Преобразование дат для экспорта
+    formatted_results = []
+    for row in results:
+        formatted_row = dict(row)
+        for key in formatted_row:
+            if isinstance(formatted_row[key], date):
+                formatted_row[key] = formatted_row[key].strftime('%Y-%m-%d')
+        formatted_results.append(formatted_row)
+    results = formatted_results
+
     # Преобразуем ключи в словаре для соответствия именам столбцов
     formatted_results = []
     for row in results:
