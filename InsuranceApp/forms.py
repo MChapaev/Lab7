@@ -57,8 +57,8 @@ class ClaimForm(forms.ModelForm):
 
     def clean_amount(self):
         amount = self.cleaned_data['amount']
-        if amount <= 0:
-            raise ValidationError("Amount must be positive.")
+        if amount < 0:
+            raise ValidationError("Amount must be non-negative.")
         return amount
 
 class DeleteClientForm(forms.Form):
