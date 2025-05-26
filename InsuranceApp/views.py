@@ -27,7 +27,6 @@ def create_record(request):
             claim = claim_form.save(commit=False)
             claim.policy = policy
             claim.save()
-            # Проверяем AJAX-запрос по заголовку
             if 'HTTP_X_REQUESTED_WITH' in request.META and request.META['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest':
                 return JsonResponse({'success': True, 'message': 'Record created successfully'})
             return redirect('index')
@@ -67,14 +66,23 @@ def delete_client(request):
 
 def view_records(request):
     query_type = request.GET.get('query_type', '')
+    if request.method == 'POST' and 'HTTP_X_REQUESTED_WITH' in request.META and request.META[
+        'HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest':
+        query_type = request.POST.get('query_type', '')
     results = []
     columns = []
     title = ''
 
+    print('Request META:', {k: v for k, v in request.META.items() if
+                            k.startswith('HTTP_') or k in ['REQUEST_METHOD', 'PATH_INFO', 'REMOTE_ADDR']})
+    is_ajax = 'HTTP_X_REQUESTED_WITH' in request.META and request.META['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest'
+    print('Is AJAX:', is_ajax)
+    print('Query Type:', query_type)
+
     if query_type == 'by_client':
         full_name = request.GET.get('full_name', '').strip()
         passport = request.GET.get('passport_number', '').strip()
-        if full_name and passport:
+        if full_name and passport and request.method == 'GET' and not is_ajax:
             results = Claim.objects.filter(
                 policy__client__full_name=full_name,
                 policy__client__passport_number=passport
@@ -83,6 +91,39 @@ def view_records(request):
             )
             columns = ['Description', 'Claim Date', 'Amount', 'Policy Type']
             title = f"Claims for {full_name} ({passport})"
+        elif request.method == 'POST' and is_ajax:
+            print('Processing AJAX request for by_client')
+            full_name = request.POST.get('full_name', '').strip()
+            passport = request.POST.get('passport_number', '').strip()
+            print('Full Name:', full_name, 'Passport:', passport)
+            if full_name and passport:
+                results = Claim.objects.filter(
+                    policy__client__full_name=full_name,
+                    policy__client__passport_number=passport
+                ).values(
+                    'description', 'claim_date', 'amount', 'policy__policy_type'
+                )
+                columns = ['Description', 'Claim Date', 'Amount', 'Policy Type']
+                title = f"Claims for {full_name} ({passport})"
+                # Преобразуем даты в строковый формат
+                formatted_results = []
+                for item in results:
+                    formatted_item = dict(item)
+                    if formatted_item['claim_date']:
+                        formatted_item['claim_date'] = formatted_item['claim_date'].strftime('%Y-%m-%d')
+                    formatted_results.append(formatted_item)
+                response_data = {
+                    'success': True,
+                    'results': formatted_results,
+                    'columns': columns,
+                    'title': title
+                }
+                print('Returning JSON:', response_data)
+                return JsonResponse(response_data)
+            else:
+                error_response = {'success': False, 'message': 'Full name and passport number are required'}
+                print('Returning error JSON:', error_response)
+                return JsonResponse(error_response, status=400)
 
     elif query_type == 'active':
         results = Claim.objects.filter(
@@ -90,6 +131,16 @@ def view_records(request):
         ).values(
             'description', 'claim_date', 'amount', 'policy__policy_type', 'policy__end_date'
         )
+        # Преобразуем даты в строковый формат
+        formatted_results = []
+        for item in results:
+            formatted_item = dict(item)
+            if formatted_item['claim_date']:
+                formatted_item['claim_date'] = formatted_item['claim_date'].strftime('%Y-%m-%d')
+            if formatted_item['policy__end_date']:
+                formatted_item['policy__end_date'] = formatted_item['policy__end_date'].strftime('%Y-%m-%d')
+            formatted_results.append(formatted_item)
+        results = formatted_results
         columns = ['Description', 'Claim Date', 'Amount', 'Policy Type', 'Policy End Date']
         title = 'Active Claims (Policy not expired)'
 
@@ -122,6 +173,7 @@ def view_records(request):
         json.dump(data, response, indent=2)
         return response
 
+    print('Rendering HTML response')
     return render(request, 'view.html', {
         'results': formatted_results,
         'columns': columns,
