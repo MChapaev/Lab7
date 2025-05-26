@@ -1,18 +1,18 @@
 {% extends 'base.html' %}
-{% block title %}Main Menu{% endblock %}
+{% block title %}Главное меню{% endblock %}
 {% block content %}
     <div class="card p-4">
-        <h1 class="text-center mb-4">Insurance Company - Main Menu</h1>
+        <h1 class="text-center mb-4">Страховая компания - Главное меню</h1>
         <div class="d-flex justify-content-center mb-4">
-            <a href="{% url 'create' %}" class="btn btn-primary mx-2">Create New Record</a>
-            <a href="{% url 'view' %}" class="btn btn-primary mx-2">View Records</a>
-            <a href="{% url 'delete' %}" class="btn btn-primary mx-2">Delete Record</a>
+            <a href="{% url 'create' %}" class="btn btn-primary mx-2">Создать новую запись</a>
+            <a href="{% url 'view' %}" class="btn btn-primary mx-2">Просмотреть записи</a>
+            <a href="{% url 'delete' %}" class="btn btn-primary mx-2">Удалить запись</a>
         </div>
-        <h2>Available Policy Types</h2>
+        <h2>Доступные типы полисов</h2>
         <table class="table table-striped">
             <thead>
                 <tr>
-                    <th>Policy Type</th>
+                    <th>Тип полиса</th>
                 </tr>
             </thead>
             <tbody>
@@ -22,7 +22,7 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td>No policy types available.</td>
+                    <td>Типы полисов отсутствуют.</td>
                 </tr>
                 {% endfor %}
             </tbody>

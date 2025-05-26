@@ -1,27 +1,27 @@
 {% extends 'base.html' %}
 {% load template_filters %}
-{% block title %}View Records{% endblock %}
+{% block title %}Просмотр записей{% endblock %}
 {% block content %}
     <div class="card p-4">
-        <h1 class="text-center mb-4">View Records</h1>
+        <h1 class="text-center mb-4">Просмотр записей</h1>
         
-        <h3>Claims by Client</h3>
+        <h3>Заявки по клиенту</h3>
         <form id="byClientForm" method="post" class="mb-4">
             {% csrf_token %}
             <input type="hidden" name="query_type" value="by_client">
             <div class="mb-3">
-                <label for="full_name" class="form-label">Full Name:</label>
+                <label for="full_name" class="form-label">ФИО:</label>
                 <input type="text" name="full_name" id="full_name" class="form-control" required>
             </div>
             <div class="mb-3">
-                <label for="passport_number" class="form-label">Passport Number:</label>
+                <label for="passport_number" class="form-label">Номер паспорта:</label>
                 <input type="text" name="passport_number" id="passport_number" class="form-control" required>
             </div>
-            <button type="submit" class="btn btn-primary">Search</button>
-            <button type="button" class="btn btn-secondary" onclick="exportJson('by_client')">Export as JSON</button>
+            <button type="submit" class="btn btn-primary">Поиск</button>
+            <button type="button" class="btn btn-secondary" onclick="exportJson('by_client')">Экспортировать в JSON</button>
         </form>
         <div id="byClientResults">
-            {% if results and title == "Claims for " %}
+            {% if results and title|slice:":10" == "Заявки для" %}
             <h2>{{ title }}</h2>
             <table class="table table-striped">
                 <thead>
@@ -40,7 +40,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="{{ columns|length }}">No records found.</td>
+                        <td colspan="{{ columns|length }}">Записи не найдены.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -49,51 +49,51 @@
         </div>
         <div id="byClientMessage" class="mt-3"></div>
 
-        <h3>All Active Claims</h3>
+        <h3>Все активные заявки</h3>
         <form id="activeForm" method="post" class="mb-4">
             {% csrf_token %}
             <input type="hidden" name="query_type" value="active">
-            <button type="submit" class="btn btn-primary">View Active Claims</button>
-            <button type="button" class="btn btn-secondary" onclick="exportJson('active')">Export as JSON</button>
+            <button type="submit" class="btn btn-primary">Просмотреть активные заявки</button>
+            <button type="button" class="btn btn-secondary" onclick="exportJson('active')">Экспортировать в JSON</button>
         </form>
         <div id="activeResults"></div>
         <div id="activeMessage" class="mt-3"></div>
 
-        <h3>Claims Grouped by Policy Type</h3>
+        <h3>Заявки, сгруппированные по типу полиса</h3>
         <form id="groupForm" method="post" class="mb-4">
             {% csrf_token %}
             <input type="hidden" name="query_type" value="group_by_type">
-            <button type="submit" class="btn btn-primary">Group by Policy Type</button>
-            <button type="button" class="btn btn-secondary" onclick="exportJson('group_by_type')">Export as JSON</button>
+            <button type="submit" class="btn btn-primary">Сгруппировать по типу полиса</button>
+            <button type="button" class="btn btn-secondary" onclick="exportJson('group_by_type')">Экспортировать в JSON</button>
         </form>
         <div id="groupResults"></div>
         <div id="groupMessage" class="mt-3"></div>
 
     </div>
     <script>
-        console.log('Script loaded, checking jQuery...');
+        console.log('Скрипт загружен, проверка jQuery...');
         if (typeof $ === 'undefined') {
-            console.error('jQuery is not loaded!');
+            console.error('jQuery не загружен!');
         } else {
-            console.log('jQuery is loaded, attaching event handler...');
+            console.log('jQuery загружен, привязка обработчиков событий...');
         }
 
         $(document).ready(function() {
-            console.log('Document ready, binding form submit...');
+            console.log('Документ готов, привязка отправки формы...');
 
-            // Обработка формы Claims by Client
+            // Обработка формы Заявки по клиенту
             const byClientForm = $('#byClientForm');
             if (byClientForm.length === 0) {
-                console.error('Form #byClientForm not found!');
+                console.error('Форма #byClientForm не найдена!');
             } else {
-                console.log('Form #byClientForm found, binding submit event...');
+                console.log('Форма #byClientForm найдена, привязка события отправки...');
             }
 
             byClientForm.on('submit', function(e) {
                 e.preventDefault();
-                console.log('Form submit prevented, sending AJAX...');
+                console.log('Отправка формы предотвращена, отправка AJAX...');
                 const formData = $(this).serialize();
-                console.log('Form data being sent:', formData);
+                console.log('Отправляемые данные формы:', formData);
 
                 $.ajax({
                     url: '{% url 'view' %}',
@@ -101,25 +101,25 @@
                     data: formData,
                     beforeSend: function(xhr) {
                         const csrfToken = $('input[name=csrfmiddlewaretoken]', byClientForm).val();
-                        console.log('CSRF token:', csrfToken);
+                        console.log('CSRF-токен:', csrfToken);
                         xhr.setRequestHeader("X-CSRFToken", csrfToken);
                     },
                     success: function(response) {
-                        console.log('AJAX success:', typeof response, response);
+                        console.log('Успешный AJAX:', typeof response, response);
                         if (typeof response === 'string') {
-                            console.error('Received HTML instead of JSON:', response.substring(0, 100));
+                            console.error('Получен HTML вместо JSON:', response.substring(0, 100));
                         } else if (response.success) {
-                            console.log('Results:', response.results);
+                            console.log('Результаты:', response.results);
                             let html = `<h2>${response.title}</h2><table class="table table-striped"><thead><tr>`;
                             response.columns.forEach(column => html += `<th>${column}</th>`);
                             html += `</tr></thead><tbody>`;
                             response.results.forEach(row => {
-                                console.log('Row:', row);
+                                console.log('Строка:', row);
                                 html += '<tr>';
                                 response.columns.forEach(column => {
                                     const key = column.toLowerCase().replace(' ', '_');
                                     const value = row[key] !== undefined ? row[key] : '';
-                                    console.log(`Column: ${column}, Key: ${key}, Value: ${value}`);
+                                    console.log(`Столбец: ${column}, Ключ: ${key}, Значение: ${value}`);
                                     html += `<td>${value}</td>`;
                                 });
                                 html += '</tr>';
@@ -133,28 +133,28 @@
                         }
                     },
                     error: function(xhr, status, error) {
-                        console.log('AJAX error:', status, error);
-                        console.log('Response text:', xhr.responseText);
-                        $('#byClientMessage').html('<div class="alert alert-danger">Server error occurred: ' + error + '</div>');
+                        console.log('Ошибка AJAX:', status, error);
+                        console.log('Текст ответа:', xhr.responseText);
+                        $('#byClientMessage').html('<div class="alert alert-danger">Произошла ошибка сервера: ' + error + '</div>');
                         $('#byClientResults').html('');
                     }
                 });
                 return false;
             });
 
-            // Обработка формы All Active Claims
+            // Обработка формы Все активные заявки
             const activeForm = $('#activeForm');
             if (activeForm.length === 0) {
-                console.error('Form #activeForm not found!');
+                console.error('Форма #activeForm не найдена!');
             } else {
-                console.log('Form #activeForm found, binding submit event...');
+                console.log('Форма #activeForm найдена, привязка события отправки...');
             }
 
             activeForm.on('submit', function(e) {
                 e.preventDefault();
-                console.log('Active form submit prevented, sending AJAX...');
+                console.log('Отправка формы активных заявок предотвращена, отправка AJAX...');
                 const formData = $(this).serialize();
-                console.log('Active form data being sent:', formData);
+                console.log('Данные формы активных заявок:', formData);
 
                 $.ajax({
                     url: '{% url 'view' %}',
@@ -162,25 +162,25 @@
                     data: formData,
                     beforeSend: function(xhr) {
                         const csrfToken = $('input[name=csrfmiddlewaretoken]', activeForm).val();
-                        console.log('CSRF token:', csrfToken);
+                        console.log('CSRF-токен:', csrfToken);
                         xhr.setRequestHeader("X-CSRFToken", csrfToken);
                     },
                     success: function(response) {
-                        console.log('AJAX success for active:', typeof response, response);
+                        console.log('Успешный AJAX для активных заявок:', typeof response, response);
                         if (typeof response === 'string') {
-                            console.error('Received HTML instead of JSON:', response.substring(0, 100));
+                            console.error('Получен HTML вместо JSON:', response.substring(0, 100));
                         } else if (response.success) {
-                            console.log('Active Results:', response.results);
+                            console.log('Результаты активных заявок:', response.results);
                             let html = `<h2>${response.title}</h2><table class="table table-striped"><thead><tr>`;
                             response.columns.forEach(column => html += `<th>${column}</th>`);
                             html += `</tr></thead><tbody>`;
                             response.results.forEach(row => {
-                                console.log('Row:', row);
+                                console.log('Строка:', row);
                                 html += '<tr>';
                                 response.columns.forEach(column => {
                                     const key = column.toLowerCase().replace(' ', '_');
                                     const value = row[key] !== undefined ? row[key] : '';
-                                    console.log(`Column: ${column}, Key: ${key}, Value: ${value}`);
+                                    console.log(`Столбец: ${column}, Ключ: ${key}, Значение: ${value}`);
                                     html += `<td>${value}</td>`;
                                 });
                                 html += '</tr>';
@@ -194,28 +194,28 @@
                         }
                     },
                     error: function(xhr, status, error) {
-                        console.log('AJAX error for active:', status, error);
-                        console.log('Response text:', xhr.responseText);
-                        $('#activeMessage').html('<div class="alert alert-danger">Server error occurred: ' + error + '</div>');
+                        console.log('Ошибка AJAX для активных заявок:', status, error);
+                        console.log('Текст ответа:', xhr.responseText);
+                        $('#activeMessage').html('<div class="alert alert-danger">Произошла ошибка сервера: ' + error + '</div>');
                         $('#activeResults').html('');
                     }
                 });
                 return false;
             });
 
-            // Обработка формы Claims Grouped by Policy Type
+            // Обработка формы Заявки, сгруппированные по типу полиса
             const groupForm = $('#groupForm');
             if (groupForm.length === 0) {
-                console.error('Form #groupForm not found!');
+                console.error('Форма #groupForm не найдена!');
             } else {
-                console.log('Form #groupForm found, binding submit event...');
+                console.log('Форма #groupForm найдена, привязка события отправки...');
             }
 
             groupForm.on('submit', function(e) {
                 e.preventDefault();
-                console.log('Group form submit prevented, sending AJAX...');
+                console.log('Отправка формы группировки предотвращена, отправка AJAX...');
                 const formData = $(this).serialize();
-                console.log('Group form data being sent:', formData);
+                console.log('Данные формы группировки:', formData);
 
                 $.ajax({
                     url: '{% url 'view' %}',
@@ -223,25 +223,25 @@
                     data: formData,
                     beforeSend: function(xhr) {
                         const csrfToken = $('input[name=csrfmiddlewaretoken]', groupForm).val();
-                        console.log('CSRF token:', csrfToken);
+                        console.log('CSRF-токен:', csrfToken);
                         xhr.setRequestHeader("X-CSRFToken", csrfToken);
                     },
                     success: function(response) {
-                        console.log('AJAX success for group:', typeof response, response);
+                        console.log('Успешный AJAX для группировки:', typeof response, response);
                         if (typeof response === 'string') {
-                            console.error('Received HTML instead of JSON:', response.substring(0, 100));
+                            console.error('Получен HTML вместо JSON:', response.substring(0, 100));
                         } else if (response.success) {
-                            console.log('Group Results:', response.results);
+                            console.log('Результаты группировки:', response.results);
                             let html = `<h2>${response.title}</h2><table class="table table-striped"><thead><tr>`;
                             response.columns.forEach(column => html += `<th>${column}</th>`);
                             html += `</tr></thead><tbody>`;
                             response.results.forEach(row => {
-                                console.log('Row:', row);
+                                console.log('Строка:', row);
                                 html += '<tr>';
                                 response.columns.forEach(column => {
                                     const key = column.toLowerCase().replace(' ', '_');
                                     const value = row[key] !== undefined ? row[key] : '';
-                                    console.log(`Column: ${column}, Key: ${key}, Value: ${value}`);
+                                    console.log(`Столбец: ${column}, Ключ: ${key}, Значение: ${value}`);
                                     html += `<td>${value}</td>`;
                                 });
                                 html += '</tr>';
@@ -255,9 +255,9 @@
                         }
                     },
                     error: function(xhr, status, error) {
-                        console.log('AJAX error for group:', status, error);
-                        console.log('Response text:', xhr.responseText);
-                        $('#groupMessage').html('<div class="alert alert-danger">Server error occurred: ' + error + '</div>');
+                        console.log('Ошибка AJAX для группировки:', status, error);
+                        console.log('Текст ответа:', xhr.responseText);
+                        $('#groupMessage').html('<div class="alert alert-danger">Произошла ошибка сервера: ' + error + '</div>');
                         $('#groupResults').html('');
                     }
                 });

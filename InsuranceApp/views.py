@@ -28,7 +28,7 @@ def create_record(request):
             claim.policy = policy
             claim.save()
             if 'HTTP_X_REQUESTED_WITH' in request.META and request.META['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest':
-                return JsonResponse({'success': True, 'message': 'Record created successfully'})
+                return JsonResponse({'success': True, 'message': 'Запись успешно создана'})
             return redirect('index')
         else:
             errors = {**client_form.errors, **policy_form.errors, **claim_form.errors}
@@ -53,7 +53,7 @@ def delete_client(request):
             client_id = form.cleaned_data['client_id']
             Client.objects.filter(id=client_id).delete()
             if 'HTTP_X_REQUESTED_WITH' in request.META and request.META['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest':
-                return JsonResponse({'success': True, 'message': f'Client {client_id} deleted'})
+                return JsonResponse({'success': True, 'message': f'Клиент {client_id} удален'})
             return redirect('index')
         else:
             if 'HTTP_X_REQUESTED_WITH' in request.META and request.META['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest':
@@ -66,8 +66,7 @@ def delete_client(request):
 
 def view_records(request):
     query_type = request.GET.get('query_type', '')
-    if request.method == 'POST' and 'HTTP_X_REQUESTED_WITH' in request.META and request.META[
-        'HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest':
+    if request.method == 'POST' and 'HTTP_X_REQUESTED_WITH' in request.META and request.META['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest':
         query_type = request.POST.get('query_type', '')
     results = []
     columns = []
@@ -90,7 +89,7 @@ def view_records(request):
                 'description', 'claim_date', 'amount', 'policy__policy_type'
             )
             columns = ['Description', 'Claim Date', 'Amount', 'Policy Type']
-            title = f"Claims for {full_name} ({passport})"
+            title = f"Claims для {full_name} ({passport})"
         elif request.method == 'POST' and is_ajax:
             print('Processing AJAX request for by_client')
             full_name = request.POST.get('full_name', '').strip()
@@ -104,8 +103,7 @@ def view_records(request):
                     'description', 'claim_date', 'amount', 'policy__policy_type'
                 )
                 columns = ['Description', 'Claim Date', 'Amount', 'Policy Type']
-                title = f"Claims for {full_name} ({passport})"
-                # Преобразуем даты в строковый формат
+                title = f"Claims для {full_name} ({passport})"
                 formatted_results = []
                 for item in results:
                     formatted_item = dict(item)
@@ -121,7 +119,7 @@ def view_records(request):
                 print('Returning JSON:', response_data)
                 return JsonResponse(response_data)
             else:
-                error_response = {'success': False, 'message': 'Full name and passport number are required'}
+                error_response = {'success': False, 'message': 'Требуются full_name и passport_number'}
                 print('Returning error JSON:', error_response)
                 return JsonResponse(error_response, status=400)
 
@@ -131,7 +129,6 @@ def view_records(request):
         ).values(
             'description', 'claim_date', 'amount', 'policy__policy_type', 'policy__end_date'
         )
-        # Преобразуем даты в строковый формат
         formatted_results = []
         for item in results:
             formatted_item = dict(item)
@@ -142,7 +139,7 @@ def view_records(request):
             formatted_results.append(formatted_item)
         results = formatted_results
         columns = ['Description', 'Claim Date', 'Amount', 'Policy Type', 'Policy End Date']
-        title = 'Active Claims (Policy not expired)'
+        title = 'Active Claims (Полис не истек)'
         if request.method == 'POST' and is_ajax:
             response_data = {
                 'success': True,
@@ -161,18 +158,17 @@ def view_records(request):
             total_amount=Sum('amount')
         )
         columns = ['Policy Type', 'Claim Count', 'Total Amount']
-        title = 'Claims Grouped by Policy Type'
+        title = 'Claims, сгруппированные по policy_type'
         if request.method == 'POST' and is_ajax:
             response_data = {
                 'success': True,
-                'results': list(results),  # Преобразуем QuerySet в список
+                'results': list(results),
                 'columns': columns,
                 'title': title
             }
             print('Returning JSON for group_by_type:', response_data)
             return JsonResponse(response_data)
 
-    # Преобразование дат для экспорта
     formatted_results = []
     for row in results:
         formatted_row = dict(row)
@@ -182,7 +178,6 @@ def view_records(request):
         formatted_results.append(formatted_row)
     results = formatted_results
 
-    # Преобразуем ключи в словаре для соответствия именам столбцов
     formatted_results = []
     for row in results:
         formatted_row = {}
