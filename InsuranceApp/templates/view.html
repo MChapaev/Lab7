@@ -49,44 +49,25 @@
         <div id="byClientMessage" class="mt-3"></div>
 
         <h3>All Active Claims</h3>
-        <form id="activeForm" method="get" class="mb-4">
+        <form id="activeForm" method="post" class="mb-4">
+            {% csrf_token %}
             <input type="hidden" name="query_type" value="active">
             <button type="submit" class="btn btn-primary">View Active Claims</button>
             <button type="button" class="btn btn-secondary" onclick="exportJson('active')">Export as JSON</button>
         </form>
+        <div id="activeResults"></div>
+        <div id="activeMessage" class="mt-3"></div>
 
         <h3>Claims Grouped by Policy Type</h3>
-        <form id="groupForm" method="get" class="mb-4">
+        <form id="groupForm" method="post" class="mb-4">
+            {% csrf_token %}
             <input type="hidden" name="query_type" value="group_by_type">
             <button type="submit" class="btn btn-primary">Group by Policy Type</button>
             <button type="button" class="btn btn-secondary" onclick="exportJson('group_by_type')">Export as JSON</button>
         </form>
+        <div id="groupResults"></div>
+        <div id="groupMessage" class="mt-3"></div>
 
-        {% if results and title != "Claims for " %}
-        <h2>{{ title }}</h2>
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    {% for column in columns %}
-                    <th>{{ column }}</th>
-                    {% endfor %}
-                </tr>
-            </thead>
-            <tbody>
-                {% for row in results %}
-                <tr>
-                    {% for column in columns %}
-                    <td>{{ row|get_item:column }}</td>
-                    {% endfor %}
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="{{ columns|length }}">No records found.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% endif %}
     </div>
     <script>
         console.log('Script loaded, checking jQuery...');
@@ -98,25 +79,27 @@
 
         $(document).ready(function() {
             console.log('Document ready, binding form submit...');
-            const form = $('#byClientForm');
-            if (form.length === 0) {
+
+            // Обработка формы Claims by Client
+            const byClientForm = $('#byClientForm');
+            if (byClientForm.length === 0) {
                 console.error('Form #byClientForm not found!');
             } else {
                 console.log('Form #byClientForm found, binding submit event...');
             }
 
-            form.on('submit', function(e) {
+            byClientForm.on('submit', function(e) {
                 e.preventDefault();
                 console.log('Form submit prevented, sending AJAX...');
                 const formData = $(this).serialize();
                 console.log('Form data being sent:', formData);
 
                 $.ajax({
-                    url: '{% url 'view' %}',  // Исправлен на динамический URL
+                    url: '{% url 'view' %}',
                     type: 'POST',
                     data: formData,
                     beforeSend: function(xhr) {
-                        const csrfToken = $('input[name=csrfmiddlewaretoken]').val();
+                        const csrfToken = $('input[name=csrfmiddlewaretoken]', byClientForm).val();
                         console.log('CSRF token:', csrfToken);
                         xhr.setRequestHeader("X-CSRFToken", csrfToken);
                     },
@@ -153,6 +136,128 @@
                         console.log('Response text:', xhr.responseText);
                         $('#byClientMessage').html('<div class="alert alert-danger">Server error occurred: ' + error + '</div>');
                         $('#byClientResults').html('');
+                    }
+                });
+                return false;
+            });
+
+            // Обработка формы All Active Claims
+            const activeForm = $('#activeForm');
+            if (activeForm.length === 0) {
+                console.error('Form #activeForm not found!');
+            } else {
+                console.log('Form #activeForm found, binding submit event...');
+            }
+
+            activeForm.on('submit', function(e) {
+                e.preventDefault();
+                console.log('Active form submit prevented, sending AJAX...');
+                const formData = $(this).serialize();
+                console.log('Active form data being sent:', formData);
+
+                $.ajax({
+                    url: '{% url 'view' %}',
+                    type: 'POST',
+                    data: formData,
+                    beforeSend: function(xhr) {
+                        const csrfToken = $('input[name=csrfmiddlewaretoken]', activeForm).val();
+                        console.log('CSRF token:', csrfToken);
+                        xhr.setRequestHeader("X-CSRFToken", csrfToken);
+                    },
+                    success: function(response) {
+                        console.log('AJAX success for active:', typeof response, response);
+                        if (typeof response === 'string') {
+                            console.error('Received HTML instead of JSON:', response.substring(0, 100));
+                        } else if (response.success) {
+                            console.log('Active Results:', response.results);
+                            let html = `<h2>${response.title}</h2><table class="table table-striped"><thead><tr>`;
+                            response.columns.forEach(column => html += `<th>${column}</th>`);
+                            html += `</tr></thead><tbody>`;
+                            response.results.forEach(row => {
+                                console.log('Row:', row);
+                                html += '<tr>';
+                                response.columns.forEach(column => {
+                                    const key = column.toLowerCase().replace(' ', '_');
+                                    const value = row[key] !== undefined ? row[key] : '';
+                                    console.log(`Column: ${column}, Key: ${key}, Value: ${value}`);
+                                    html += `<td>${value}</td>`;
+                                });
+                                html += '</tr>';
+                            });
+                            html += '</tbody></table>';
+                            $('#activeResults').html(html);
+                            $('#activeMessage').html('');
+                        } else {
+                            $('#activeMessage').html('<div class="alert alert-danger">' + response.message + '</div>');
+                            $('#activeResults').html('');
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.log('AJAX error for active:', status, error);
+                        console.log('Response text:', xhr.responseText);
+                        $('#activeMessage').html('<div class="alert alert-danger">Server error occurred: ' + error + '</div>');
+                        $('#activeResults').html('');
+                    }
+                });
+                return false;
+            });
+
+            // Обработка формы Claims Grouped by Policy Type
+            const groupForm = $('#groupForm');
+            if (groupForm.length === 0) {
+                console.error('Form #groupForm not found!');
+            } else {
+                console.log('Form #groupForm found, binding submit event...');
+            }
+
+            groupForm.on('submit', function(e) {
+                e.preventDefault();
+                console.log('Group form submit prevented, sending AJAX...');
+                const formData = $(this).serialize();
+                console.log('Group form data being sent:', formData);
+
+                $.ajax({
+                    url: '{% url 'view' %}',
+                    type: 'POST',
+                    data: formData,
+                    beforeSend: function(xhr) {
+                        const csrfToken = $('input[name=csrfmiddlewaretoken]', groupForm).val();
+                        console.log('CSRF token:', csrfToken);
+                        xhr.setRequestHeader("X-CSRFToken", csrfToken);
+                    },
+                    success: function(response) {
+                        console.log('AJAX success for group:', typeof response, response);
+                        if (typeof response === 'string') {
+                            console.error('Received HTML instead of JSON:', response.substring(0, 100));
+                        } else if (response.success) {
+                            console.log('Group Results:', response.results);
+                            let html = `<h2>${response.title}</h2><table class="table table-striped"><thead><tr>`;
+                            response.columns.forEach(column => html += `<th>${column}</th>`);
+                            html += `</tr></thead><tbody>`;
+                            response.results.forEach(row => {
+                                console.log('Row:', row);
+                                html += '<tr>';
+                                response.columns.forEach(column => {
+                                    const key = column.toLowerCase().replace(' ', '_');
+                                    const value = row[key] !== undefined ? row[key] : '';
+                                    console.log(`Column: ${column}, Key: ${key}, Value: ${value}`);
+                                    html += `<td>${value}</td>`;
+                                });
+                                html += '</tr>';
+                            });
+                            html += '</tbody></table>';
+                            $('#groupResults').html(html);
+                            $('#groupMessage').html('');
+                        } else {
+                            $('#groupMessage').html('<div class="alert alert-danger">' + response.message + '</div>');
+                            $('#groupResults').html('');
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.log('AJAX error for group:', status, error);
+                        console.log('Response text:', xhr.responseText);
+                        $('#groupMessage').html('<div class="alert alert-danger">Server error occurred: ' + error + '</div>');
+                        $('#groupResults').html('');
                     }
                 });
                 return false;

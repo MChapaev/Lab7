@@ -143,6 +143,15 @@ def view_records(request):
         results = formatted_results
         columns = ['Description', 'Claim Date', 'Amount', 'Policy Type', 'Policy End Date']
         title = 'Active Claims (Policy not expired)'
+        if request.method == 'POST' and is_ajax:
+            response_data = {
+                'success': True,
+                'results': formatted_results,
+                'columns': columns,
+                'title': title
+            }
+            print('Returning JSON for active claims:', response_data)
+            return JsonResponse(response_data)
 
     elif query_type == 'group_by_type':
         results = Claim.objects.values(
@@ -153,6 +162,15 @@ def view_records(request):
         )
         columns = ['Policy Type', 'Claim Count', 'Total Amount']
         title = 'Claims Grouped by Policy Type'
+        if request.method == 'POST' and is_ajax:
+            response_data = {
+                'success': True,
+                'results': list(results),  # Преобразуем QuerySet в список
+                'columns': columns,
+                'title': title
+            }
+            print('Returning JSON for group_by_type:', response_data)
+            return JsonResponse(response_data)
 
     # Преобразуем ключи в словаре для соответствия именам столбцов
     formatted_results = []
