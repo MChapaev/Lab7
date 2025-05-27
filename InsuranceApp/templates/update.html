@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+{% block title %}Обновить данные пользователя{% endblock %}
+{% block content %}
+    <div class="card p-4">
+        <h1 class="text-center mb-4">Обновить данные пользователя</h1>
+
+        <h3>Поиск пользователя</h3>
+        <form id="searchUserForm" method="post" class="mb-4">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="search">
+            <div class="mb-3">
+                <label for="full_name" class="form-label">ФИО:</label>
+                <input type="text" name="full_name" id="full_name" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label for="passport_number" class="form-label">Номер паспорта:</label>
+                <input type="text" name="passport_number" id="passport_number" class="form-control" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Посмотреть</button>
+        </form>
+        <div id="searchResult" class="mt-3"></div>
+
+        <div id="updateUserFormContainer" style="display: none;">
+            <h3>Обновление данных</h3>
+            <form id="updateUserForm" method="post" class="mb-4">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update">
+                <input type="hidden" name="full_name_original" id="full_name_original">
+                <input type="hidden" name="passport_number_original" id="passport_number_original">
+                <div class="mb-3">
+                    <label for="full_name_new" class="form-label">Новое ФИО:</label>
+                    <input type="text" name="full_name_new" id="full_name_new" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label for="date_of_birth_new" class="form-label">Новая дата рождения:</label>
+                    <input type="date" name="date_of_birth_new" id="date_of_birth_new" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label for="passport_number_new" class="form-label">Новый номер паспорта:</label>
+                    <input type="text" name="passport_number_new" id="passport_number_new" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label for="phone_number_new" class="form-label">Новый номер телефона:</label>
+                    <input type="text" name="phone_number_new" id="phone_number_new" class="form-control">
+                </div>
+                <div class="mb-3">
+                    <label for="email_new" class="form-label">Новая почта:</label>
+                    <input type="email" name="email_new" id="email_new" class="form-control">
+                </div>
+                <button type="submit" class="btn btn-success">Подтвердить</button>
+            </form>
+            <div id="updateResult" class="mt-3"></div>
+        </div>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            console.log('Document ready, binding form submits...');
+
+            const searchForm = $('#searchUserForm');
+            if (searchForm.length === 0) {
+                console.error('Form #searchUserForm not found!');
+            } else {
+                console.log('Form #searchUserForm found, binding submit event...');
+            }
+
+            searchForm.on('submit', function(e) {
+                e.preventDefault();
+                console.log('Search form submit prevented, sending AJAX...');
+                const formData = $(this).serialize();
+                console.log('Search form data being sent:', formData);
+
+                $.ajax({
+                    url: '{% url 'update' %}',
+                    type: 'POST',
+                    data: formData,
+                    beforeSend: function(xhr) {
+                        const csrfToken = $('input[name=csrfmiddlewaretoken]', searchForm).val();
+                        console.log('CSRF token:', csrfToken);
+                        xhr.setRequestHeader("X-CSRFToken", csrfToken);
+                    },
+                    success: function(response) {
+                        console.log('AJAX success for search:', response);
+                        if (response.success) {
+                            $('#searchResult').html('<div class="alert alert-success">Пользователь найден.</div>');
+                            // Заполняем скрытые поля и новые поля формы
+                            $('#full_name_original').val(response.user.full_name);
+                            $('#passport_number_original').val(response.user.passport_number);
+                            $('#full_name_new').val(response.user.full_name);
+                            $('#date_of_birth_new').val(response.user.date_of_birth ? response.user.date_of_birth : '');
+                            $('#passport_number_new').val(response.user.passport_number);
+                            $('#phone_number_new').val(response.user.phone_number ? response.user.phone_number : '');
+                            $('#email_new').val(response.user.email ? response.user.email : '');
+                            $('#updateUserFormContainer').show();
+                        } else {
+                            $('#searchResult').html('<div class="alert alert-danger">Пользователь не найден.</div>');
+                            $('#updateUserFormContainer').hide();
+                            $('#updateResult').html('');
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.log('AJAX error for search:', status, error);
+                        $('#searchResult').html('<div class="alert alert-danger">Произошла ошибка: ' + error + '</div>');
+                        $('#updateUserFormContainer').hide();
+                    }
+                });
+                return false;
+            });
+
+            const updateForm = $('#updateUserForm');
+            if (updateForm.length === 0) {
+                console.error('Form #updateUserForm not found!');
+            } else {
+                console.log('Form #updateUserForm found, binding submit event...');
+            }
+
+            updateForm.on('submit', function(e) {
+                e.preventDefault();
+                console.log('Update form submit prevented, sending AJAX...');
+                const formData = $(this).serialize();
+                console.log('Update form data being sent:', formData);
+
+                $.ajax({
+                    url: '{% url 'update' %}',
+                    type: 'POST',
+                    data: formData,
+                    beforeSend: function(xhr) {
+                        const csrfToken = $('input[name=csrfmiddlewaretoken]', updateForm).val();
+                        console.log('CSRF token:', csrfToken);
+                        xhr.setRequestHeader("X-CSRFToken", csrfToken);
+                    },
+                    success: function(response) {
+                        console.log('AJAX success for update:', response);
+                        if (response.success) {
+                            $('#updateResult').html('<div class="alert alert-success">Данные пользователя успешно обновлены.</div>');
+                            $('#searchResult').html('');
+                            $('#updateUserFormContainer').hide();
+                        } else {
+                            $('#updateResult').html('<div class="alert alert-danger">' + response.message + '</div>');
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.log('AJAX error for update:', status, error);
+                        $('#updateResult').html('<div class="alert alert-danger">Произошла ошибка: ' + error + '</div>');
+                    }
+                });
+                return false;
+            });
+        });
+    </script>
+{% endblock %}
